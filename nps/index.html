@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>同程旅行 · 1v1服务管家 NPS 数据看板</title>
+<style>
+:root{
+  --tc-green:#00C07B; --tc-g1:#00BF63; --tc-g2:#01C192; --tc-deep:#009E66;
+  --tc-purple:#715EFF; --tc-orange:#FF5D3D; --tc-blue:#2DA1E7; --tc-gold:#E8A33D;
+  --tc-teal:#01C1B2; --tc-coral:#FF7A5C; --tc-yellow:#FFEA00;
+  --ink:#111827; --sub:#5C6675; --faint:#8B94A3; --line:#E7EDEA;
+  --bg:#F3F8F5; --card:#FFFFFF;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);line-height:1.6}
+.num{font-family:Bahnschrift,"DIN Alternate","Segoe UI",Arial,sans-serif;font-variant-numeric:tabular-nums}
+.wrap{max-width:1280px;margin:0 auto;padding:0 24px}
+
+/* ---------- 顶栏 ---------- */
+.topbar{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.topbar .wrap{display:flex;align-items:center;gap:14px;height:64px}
+.logo-badge{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--tc-g1),var(--tc-g2));display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.brand-name{font-size:18px;font-weight:800;letter-spacing:1px}
+.brand-sub{font-size:11px;color:var(--faint);letter-spacing:2px;margin-top:-3px}
+.top-tag{margin-left:auto;font-size:12px;color:var(--tc-deep);background:#E4F7EE;border:1px solid #C3EEDB;padding:4px 12px;border-radius:999px;white-space:nowrap}
+
+/* ---------- 页头 ---------- */
+.hero{background:linear-gradient(115deg,#00A568 0%,var(--tc-g1) 38%,var(--tc-g2) 100%);color:#fff;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-120px;top:-140px;width:420px;height:420px;border-radius:50%;background:rgba(255,255,255,.08)}
+.hero::before{content:"";position:absolute;right:60px;bottom:-180px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.07)}
+.hero .wrap{position:relative;z-index:2;padding-top:38px;padding-bottom:30px}
+.hero h1{font-size:30px;font-weight:800;letter-spacing:1px}
+.hero p.sub{opacity:.92;font-size:14px;margin-top:6px}
+.hero .period{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);padding:3px 14px;border-radius:999px;font-size:12px;margin-bottom:14px}
+
+/* ---------- 选项卡 ---------- */
+.tabs{display:flex;gap:12px;margin:22px 0 6px}
+.tab-btn{flex:1;max-width:340px;border:none;cursor:pointer;padding:13px 18px;border-radius:14px;font-size:15px;font-weight:700;background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.35);transition:.2s;text-align:left;font-family:inherit}
+.tab-btn small{display:block;font-weight:400;font-size:12px;opacity:.85;margin-top:2px}
+.tab-btn.active{background:#fff;color:var(--tc-deep);border-color:#fff}
+
+/* ---------- KPI ---------- */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:-46px auto 30px;position:relative;z-index:5}
+.kpi{background:var(--card);border-radius:16px;padding:16px 18px;box-shadow:0 6px 22px rgba(17,24,39,.07)}
+.kpi .lab{font-size:12px;color:var(--faint)}
+.kpi .val{font-size:28px;font-weight:800;margin-top:2px}
+.kpi .val.green{color:var(--tc-green)} .kpi .val.purple{color:var(--tc-purple)} .kpi .val.orange{color:var(--tc-orange)} .kpi .val.blue{color:var(--tc-blue)}
+.kpi .ext{font-size:11px;color:var(--sub);margin-top:2px}
+
+/* ---------- 区块 ---------- */
+.section{margin-bottom:40px}
+.sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.sec-head h2{font-size:20px;font-weight:800;position:relative;padding-left:14px}
+.sec-head h2::before{content:"";position:absolute;left:0;top:4px;bottom:4px;width:5px;border-radius:3px;background:linear-gradient(180deg,var(--tc-g1),var(--tc-g2))}
+.sec-head .desc{font-size:13px;color:var(--faint)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr}}
+.card{background:var(--card);border-radius:16px;padding:20px;box-shadow:0 2px 14px rgba(17,24,39,.05);border:1px solid #EDF2EF}
+.card h3{font-size:15px;font-weight:800;margin-bottom:4px}
+.card .hint{font-size:12px;color:var(--faint);margin-bottom:10px}
+.chart{width:100%;height:330px}
+.chart.tall{height:380px}
+.chart.short{height:290px}
+
+/* ---------- 洞察卡 ---------- */
+.insight{border-left:4px solid var(--tc-green);background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 2px 12px rgba(17,24,39,.05)}
+.insight.warn{border-left-color:var(--tc-orange);background:#FFF8F6}
+.insight.purple{border-left-color:var(--tc-purple);background:#F9F8FF}
+.insight h4{font-size:14.5px;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.insight p{font-size:13px;color:#3D4654;margin-top:5px}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:0 0 auto}
+.tag{display:inline-block;font-size:11px;padding:1px 9px;border-radius:999px;margin-right:6px;background:#E4F7EE;color:var(--tc-deep);font-weight:600}
+.tag.o{background:#FFEDE8;color:#E14B2C}
+.tag.p{background:#EFEBFF;color:var(--tc-purple)}
+
+/* ---------- 个人卡 ---------- */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:18px}
+.pcard{background:#fff;border-radius:16px;border:1px solid #EDF2EF;padding:18px;box-shadow:0 2px 14px rgba(17,24,39,.05)}
+.pcard .ph{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.avatar{width:46px;height:46px;border-radius:14px;color:#fff;font-size:19px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.pcard .nm{font-size:16px;font-weight:800}
+.pcard .role{font-size:11px;color:var(--faint)}
+.nps-badge{margin-left:auto;font-size:18px;font-weight:800;padding:4px 12px;border-radius:10px}
+.mini-bar{display:flex;height:10px;border-radius:6px;overflow:hidden;margin:10px 0 6px}
+.mini-bar i{display:block;height:100%}
+.legend-row{display:flex;gap:14px;font-size:11px;color:var(--sub);flex-wrap:wrap}
+.stats-row{display:flex;gap:10px;margin:10px 0;flex-wrap:wrap}
+.stat{flex:1;min-width:64px;background:#F5FAF7;border-radius:10px;padding:7px 9px;text-align:center}
+.stat b{display:block;font-size:16px}
+.stat span{font-size:10.5px;color:var(--faint)}
+.quote{border-radius:10px;padding:8px 12px;font-size:12.5px;margin-top:8px;color:#333D4B}
+.quote.pos{background:#F0FBF5;border:1px solid #D6F3E4}
+.quote.neg{background:#FFF4F0;border:1px solid #FFE0D5}
+.quote .qmeta{font-size:11px;color:var(--faint);margin-top:3px}
+
+/* ---------- 表格 ---------- */
+.tbl-wrap{overflow-x:auto}
+table.nps-matrix{border-collapse:collapse;width:100%;font-size:13px;min-width:760px}
+.nps-matrix th{background:#F1F7F3;color:#3D4654;font-weight:700;padding:9px 10px;border-bottom:2px solid #DCEAE1;white-space:nowrap}
+.nps-matrix td{padding:8px 10px;text-align:center;border-bottom:1px solid #EFF4F1;white-space:nowrap}
+.nps-matrix td.name{text-align:left;font-weight:700}
+.nps-matrix tr.group-row td{background:#F4FBF7;font-weight:800;border-top:2px solid #CDEBDC}
+.cell-nps{border-radius:8px;font-weight:700;display:inline-block;min-width:56px;padding:3px 6px}
+.lv-hi{background:#DCF6E9;color:#00875A}
+.lv-mid{background:#FFF4D6;color:#A06B00}
+.lv-low{background:#FFE7DF;color:#D6401F}
+.lv-na{color:#C0C7D0}
+
+/* ---------- 页脚 ---------- */
+footer{background:#0E1512;color:#AEB9B2;margin-top:20px}
+footer .wrap{padding:36px 24px 30px}
+footer .slogan{font-size:22px;font-weight:800;color:#fff;letter-spacing:2px}
+footer .slogan em{font-style:normal;background:linear-gradient(90deg,var(--tc-g1),var(--tc-g2));-webkit-background-clip:text;background-clip:text;color:transparent}
+footer .method{margin-top:16px;font-size:12px;line-height:1.9;color:#93A09A}
+footer .method b{color:#D7E2DC}
+footer .brandline{margin-top:18px;font-size:11px;color:#5F6B65;letter-spacing:1px}
+
+.hidden{display:none}
+.note{font-size:11.5px;color:var(--faint);margin-top:8px}
+</style>
+</head>
+<body>
+
+<!-- ============ 顶栏 ============ -->
+<div class="topbar">
+  <div class="wrap">
+    <div class="logo-badge">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <ellipse cx="11" cy="11.5" rx="8.2" ry="4.6" fill="#fff"/>
+        <path d="M18.6 10.2 L22.6 7.6 L21 11.5 L22.6 15.4 L18.6 12.8 Z" fill="#fff" opacity=".92"/>
+        <circle cx="6.8" cy="10.6" r="1.25" fill="#00A568"/>
+        <path d="M3 17.5 c2.2 1.6 5 2.3 8 2.1" stroke="#fff" stroke-width="1.4" stroke-linecap="round" opacity=".75"/>
+      </svg>
+    </div>
+    <div>
+      <div class="brand-name">同程旅行</div>
+      <div class="brand-sub">LY.COM · 1v1服务管家</div>
+    </div>
+    <div class="top-tag">NPS 数据看板 · 数据截至 2026-08-06</div>
+  </div>
+</div>
+
+<!-- ============ 页头 ============ -->
+<div class="hero">
+  <div class="wrap">
+    <div class="period">2026年1月 — 8月 · NPS 专项回收</div>
+    <h1>1v1服务管家 · NPS 服务质量看板</h1>
+    <p class="sub">NPS 取自「您是否愿意推荐身边的人（亲朋好友）使用1v1服务管家」｜ 7-9分 非常满意 · 3-6分 一般 · 0-2分 非常不满意 ｜ NPS =（非常满意 − 非常不满意）÷ 回收总数 ｜ 已剔除同一客户对同一管家的重复评价</p>
+    <div class="tabs">
+      <button class="tab-btn active" id="btn-week" onclick="switchTab('week')">8月1日—6日 周报<small>个人维度回收量 · NPS · 用户评价深度分析</small></button>
+      <button class="tab-btn" id="btn-month" onclick="switchTab('month')">1—8月 月度趋势<small>个人 × 小组 月度 NPS · 反馈变化分析</small></button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ==================== 周报视图 ==================== -->
+<div id="view-week">
+  <div class="kpis">
+    <div class="kpi"><div class="lab">回收总量（去重后）</div><div class="val num green">42</div><div class="ext">原始42份 · 重复0份 · 另剔除无效问卷66份</div></div>
+    <div class="kpi"><div class="lab">小组 NPS</div><div class="val num green">97.6%</div><div class="ext">非常满意41 · 一般1 · 非常不满意0</div></div>
+    <div class="kpi"><div class="lab">平均推荐得分</div><div class="val num purple">8.88<span style="font-size:14px;color:var(--faint)"> /9</span></div><div class="ext">第4题均值，接近满分</div></div>
+    <div class="kpi"><div class="lab">文字反馈率</div><div class="val num blue">54.8%</div><div class="ext">23/42 留下管家服务意见</div></div>
+    <div class="kpi"><div class="lab">覆盖省级区域</div><div class="val num">20+</div><div class="ext">北京最多（6份）</div></div>
+  </div>
+
+  <!-- 个人 NPS 总览 -->
+  <div class="section">
+    <div class="sec-head"><h2>个人维度 · NPS 与回收量总览</h2><span class="desc">8月1日0时 — 8月6日 · 剔除重复评价后</span></div>
+    <div class="grid2">
+      <div class="card"><h3>个人 NPS 值 & 回收量</h3><div class="hint">柱：回收量（份）｜ 线：NPS（%）｜ 虚线为小组 NPS 97.6%</div><div id="c_p1_npvol" class="chart"></div></div>
+      <div class="card"><h3>个人评分结构（非常满意 / 一般 / 非常不满意）</h3><div class="hint">按第4题得分分段：7-9 / 3-6 / 0-2</div><div id="c_p1_band" class="chart"></div></div>
+      <div class="card"><h3>四维满意度雷达 · 个人对比</h3><div class="hint">Q1 管家满意度 · Q2 产品满意度 · Q3 推荐同程旅行 · Q4 推荐1v1管家（满分9）</div><div id="c_p1_radar" class="chart tall"></div></div>
+      <div class="card">
+        <div class="grid2" style="gap:0">
+          <div><h3>每日回收节奏</h3><div class="hint">8/3 为峰值（12份）</div><div id="c_p1_daily" class="chart short"></div></div>
+          <div><h3>反馈主题分布</h3><div class="hint">Q5 管家服务意见文本归类</div><div id="c_p1_theme" class="chart short"></div></div>
+        </div>
+        <div class="note">注：「未填写」19份；有效文字中以好评为主，唯一明确建议指向退票手续费。</div>
+      </div>
+      <div class="card" style="grid-column:1 / -1"><h3>评价客户地域分布 TOP10（省）</h3><div class="hint">按去重后回收量统计</div><div id="c_p1_prov" class="chart short"></div></div>
+    </div>
+  </div>
+
+  <!-- 个人详情卡 -->
+  <div class="section">
+    <div class="sec-head"><h2>个人维度 · 服务画像与客户原声</h2><span class="desc">回收量 · NPS · 评分分布 · 四维均分 · 代表评价</span></div>
+    <div class="pgrid" id="pcards"></div>
+  </div>
+
+  <!-- 周报洞察 -->
+  <div class="section">
+    <div class="sec-head"><h2>周报 · 深度分析</h2><span class="desc">小组维度 + 个人维度</span></div>
+    <div class="grid2">
+      <div class="insight"><h4><span class="dot" style="background:var(--tc-green)"></span>小组整体：超高位运行，仅一处微瑕</h4>
+        <p>8月1日—6日共回收 <b>42份</b>（无重复评价、无周内无效件），小组 NPS <b>97.6%</b>：非常满意 41份、一般 1份、非常不满意 0份，平均推荐得分 8.88/9。唯一失分来自朱锦城名下一位 6分客户（未留言），使个人 NPS 降至 92.3%，其余 5位管家均为 100%。</p></div>
+      <div class="insight warn"><h4><span class="dot" style="background:var(--tc-orange)"></span>小组短板：产品体验是口碑的薄弱一环</h4>
+        <p>四维均分排序：管家满意度 8.88 = 推荐管家意愿 8.88 > 推荐同程旅行 8.74 > <b>产品满意度 8.64</b>。产品满意度是唯一明显低于 8.8 的维度；本期唯一明确意见为「<b>退票手续费太贵</b>」（该客户对管家仍打满分），与月度数据中反复出现的退改/价格类诉求相互印证。</p></div>
+      <div class="insight"><h4><span class="dot" style="background:var(--tc-purple)"></span>小组声音结构：好评聚焦「热情·专业·高效」</h4>
+        <p>23份文字反馈（占54.8%）中：好评类 8份，关键词集中于<b>贴心、专业、效率高、回复快</b>；典型原声如「管家服务专业效率高，这么晚还在帮我值机选座」「回复快，效率高」「服务很周到」；中性（无/没有）13份；建议类 1份（退票手续费）。</p></div>
+      <div class="insight"><h4><span class="dot" style="background:var(--tc-blue)"></span>小组节奏与覆盖</h4>
+        <p>日均回收约 7份，8月3日达峰值 12份；评价客户覆盖 20余个省级区域，北京（6）、湖南（4）、山东/内蒙古/四川/新疆/江苏/福建（各3）居前，与暑期出游热度分布一致；8月6日数据仍在陆续回收中（当前3份）。</p></div>
+    </div>
+    <div class="grid3" style="margin-top:18px">
+      <div class="insight"><h4>个人亮点 · 朱锦城 / 王晨</h4><p><b>朱锦城</b>回收量第一（13份，占小组31%），好评密集（专业、热心、深夜协助值机）；但含小组唯一6分件，需优先回访定位原因。<b>王晨</b>回收量第二（10份）、NPS 100%，但文字反馈率仅20%，建议在服务触点中主动引导客户留下意见，增强声音捕捉。</p></div>
+      <div class="insight"><h4>个人亮点 · 戴孟芳 / 程虹</h4><p><b>戴孟芳</b>4份全部9分，其中1份在满分评价管家的同时明确提出「退票手续费太高」——典型的「服务高分、产品减分」样本，建议将该诉求回流产品侧。<b>程虹</b>5份全部9分，获「專業」点赞，2份未留言。</p></div>
+      <div class="insight"><h4>个人亮点 · 刘迎艳 / 许梦圆</h4><p><b>刘迎艳</b>5份全部9分，获「回复快，效率高」「服务很周到」等点名表扬，响应速度是其突出标签。<b>许梦圆</b>5份全部9分，客户评价「服务态度热情及时，继续努力」，服务温度感强。</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 月度视图 ==================== -->
+<div id="view-month" class="hidden">
+  <div class="kpis">
+    <div class="kpi"><div class="lab">1-8月累计回收（去重后）</div><div class="val num green">1101</div><div class="ext">剔除重复5份 · 无效问卷66份</div></div>
+    <div class="kpi"><div class="lab">累计 NPS</div><div class="val num green">98.7%</div><div class="ext">非常满意1089 · 一般10 · 非常不满意2</div></div>
+    <div class="kpi"><div class="lab">月均回收（1-7月完整月）</div><div class="val num blue">151</div><div class="ext">峰值：7月 198份（暑期旺季）</div></div>
+    <div class="kpi"><div class="lab">NPS 区间</div><div class="val num purple">97.5–100%</div><div class="ext">8个月全部处于优秀线之上</div></div>
+    <div class="kpi"><div class="lab">满分月（NPS 100%）</div><div class="val num">1月</div><div class="ext">158份零失分</div></div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head"><h2>小组维度 · 月度 NPS 走势</h2><span class="desc">回收量与 NPS 双轴对照</span></div>
+    <div class="grid2">
+      <div class="card"><h3>小组月度 NPS & 回收量</h3><div class="hint">柱：回收量（去重后）｜ 线：NPS（%）</div><div id="c_m_group" class="chart"></div></div>
+      <div class="card"><h3>小组月度评分结构</h3><div class="hint">100% 堆叠：非常满意 / 一般 / 非常不满意（柱顶为回收总量）</div><div id="c_m_struct" class="chart"></div></div>
+      <div class="card" style="grid-column:1 / -1"><h3>个人月度 NPS 走势 × 小组基准</h3><div class="hint">粗绿线为小组 NPS；标注点为个人单月低点</div><div id="c_m_nps" class="chart tall"></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head"><h2>个人维度 · 月度回收与质量</h2><span class="desc">回收量热力 · 推荐均分 · NPS 矩阵</span></div>
+    <div class="grid2">
+      <div class="card"><h3>个人 × 月份 回收量热力图</h3><div class="hint">颜色越深回收越多（去重后）</div><div id="c_m_heat" class="chart tall"></div></div>
+      <div class="card"><h3>个人月度平均推荐得分（第4题）</h3><div class="hint">9分制均值，反映推荐意愿强度变化</div><div id="c_m_avg" class="chart tall"></div></div>
+    </div>
+    <div class="card" style="margin-top:18px">
+      <h3>个人月度 NPS 矩阵（%）</h3><div class="hint">绿 ≥99.5 · 黄 97–99.5 · 橙 &lt;97 ｜ 末列为1-8月累计</div>
+      <div class="tbl-wrap"><table class="nps-matrix" id="tbl-nps"></table></div>
+    </div>
+    <div class="card" style="margin-top:18px">
+      <h3>个人月度回收量矩阵（份）</h3>
+      <div class="tbl-wrap"><table class="nps-matrix" id="tbl-vol"></table></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head"><h2>反馈声音 · 月度演变</h2><span class="desc">Q5 文本主题结构变化</span></div>
+    <div class="grid2">
+      <div class="card"><h3>月度反馈结构（主题堆叠）</h3><div class="hint">好评类 / 中性（无意见）/ 建议与不满类 / 未填写</div><div id="c_m_theme" class="chart"></div></div>
+      <div class="card"><h3>低分原因归因（1-8月共12例低分）</h3><div class="hint">低分 = 第4题 ≤ 6分（一般/非常不满意）</div><div id="c_m_cause" class="chart"></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sec-head"><h2>月度 · 深度分析</h2><span class="desc">小组反馈变化 + 个人反馈变化</span></div>
+    <div class="grid2">
+      <div class="insight"><h4><span class="dot" style="background:var(--tc-green)"></span>小组总览：高位平稳，重心3月后轻微下移</h4>
+        <p>1-8月累计回收 <b>1101份</b>，累计 NPS <b>98.7%</b>。月度 NPS：1月 100% → 2月 99.0% → 3月 98.0% → 4月 98.7% → 5月 99.3% → 6月 99.3% → 7月 97.5% → 8月(至6日) 97.6%。整体处于极高水平，但 3月起中枢由 99%+ 小幅下移至 97.5–99.3% 区间，7月为上半年低点。</p></div>
+      <div class="insight"><h4><span class="dot" style="background:var(--tc-blue)"></span>回收量周期：春节低谷 × 暑期峰值</h4>
+        <p>2月为春节淡季低谷（103份），3月起回升至 150±10 平台期，<b>7月暑期冲到 198份</b>（较月均高约30%）。值得注意的是，7月既是回收峰值也是低分最集中月（一般3 + 非常不满意1），<b>旺季服务负载与体验承压呈同步关系</b>，建议旺季前置排班与话术保障。</p></div>
+      <div class="insight warn"><h4><span class="dot" style="background:var(--tc-orange)"></span>小组归因：低分几乎全部指向平台产品，而非管家服务</h4>
+        <p>1-8月仅 12例低分（一般10 + 非常不满意2）。有明确意见的 5例中，4例指向产品机制：<b>票价高于携程/美团、搭售产品、绑销、联程航班取消未及时通知</b>；另1例为信息通知问题。全部低分客户对管家本身的满意度（Q1）≥5分、其中多数为9分——「不愿推荐」的根因在产品侧，管家服务是稳固的基本盘。</p></div>
+      <div class="insight purple"><h4><span class="dot" style="background:var(--tc-purple)"></span>反馈主题演变：从「夸服务」到「提产品建议」</h4>
+        <p>好评文字占比稳定在 8–18%（3月最多，27条），未填写比例 7月升至 52%（103/198），旺季反馈参与度下降值得关注。更重要的是「<b>退改与费用</b>」类建议自 5月起开始出现（5月2条 → 6月1条 → 8月1条），客户关注点正从单纯的服务态度向<b>价格与退改机制</b>延伸，与产品满意度（Q2）长期为四维最低相互印证。</p></div>
+    </div>
+    <div class="grid3" style="margin-top:18px">
+      <div class="insight"><h4>个人趋势 · 戴孟芳 / 许梦圆（双满分标杆）</h4>
+        <p><b>戴孟芳</b>连续8个月 NPS 100%，月回收 17–33份稳定输出，是小组唯一「全绿常青树」。<b>许梦圆</b>同样8个月全满分，且在4月（38份）、7月（41份）两个高负载月零失分，抗压能力突出。两人的服务 SOP 值得沉淀为小组标准。</p></div>
+      <div class="insight warn"><h4>个人趋势 · 朱锦城（量最大、波动最多）</h4>
+        <p>累计回收 231份居首（占小组21%），但出现5次波动：2月 95.8%（票价比携程/美团高）→ 5月 96.4%（绑销）→ 6月 97.1% → 7月 97.2%（联程后半程取消未及时通知）→ 8月 92.3%（6分未留言）。<b>低分原因清一色指向平台产品/机制</b>，建议为其建立「产品问题直通反馈通道」，并对8月6分客户优先回访。</p></div>
+      <div class="insight warn"><h4>个人趋势 · 程虹 / 王晨 / 刘迎艳（事件型波动）</h4>
+        <p><b>程虹</b>3-4月连续走低（92.3%/91.7%）：3月因「信息通知」问题+1例无留言低分，4月2例无留言低分；5-6月回升100%，7月96.3%，8月100%。<b>王晨</b>3月遭遇0分极值事件（客户不满「搭售产品」，但对管家满意度打9分），NPS 94.7%，7月97.3%，其余月份满分。<b>刘迎艳</b>1-6月连续100%，7月1例0分疑似录入异常（留言却写「比较满意」，且该客户4月曾给程虹3分），NPS 91.7%，8月已回升100%。</p></div>
+    </div>
+    <div class="insight warn" style="margin-top:18px"><h4><span class="dot" style="background:var(--tc-orange)"></span>风险预警 · 重复低分客户（跨月 / 跨管家）</h4>
+      <p style="margin-top:4px">
+        <span class="tag o">高</span><b>「有舍有得」</b>：4月给程虹 3分 → 7月给刘迎艳 0分，跨月恶化、跨管家出现，建议立即专项回访；<br>
+        <span class="tag o">中</span><b>「Tang_Xu」</b>：7月、8月连续两月给朱锦城 6分，均未留言，诉求未暴露，需主动触达；<br>
+        <span class="tag p">中</span><b>「彭水斌」</b>：3月给王晨 0分（搭售产品）→ 5月给朱锦城 6分（绑销），不满聚焦「捆绑销售」，需产品侧根因解决。<br>
+        建议建立低分客户档案与管家交接机制：低分客户后续服务由专人跟进，并把产品类诉求闭环至对应业务线。</p></div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<!-- ============ 页脚 ============ -->
+<footer>
+  <div class="wrap">
+    <div class="slogan">再出发，<em>就同程</em></div>
+    <div class="method">
+      <b>数据口径与方法说明</b><br>
+      数据来源：NPS 问卷回收明细（nps.xlsx，导出区间 2024-12-10 至 2026-08-06）；本看板统计范围为 2026年1月1日 — 8月6日。<br>
+      NPS 计分题项：第4题「您是否愿意推荐身边的人（亲朋好友）使用1v1服务管家」；7-9分 非常满意、3-6分 一般、0-2分 非常不满意；NPS =（非常满意数 − 非常不满意数）÷ 回收总数 × 100%。<br>
+      去重规则：同一客户（按用户标识）对同一管家的重复评价仅保留最早一条；去重在各自统计周期内执行（周报为 8/1–8/6，月报为当月内）。<br>
+      数据清洗：已剔除「手动标记（无效）」问卷共 66份（王晨40、许梦圆23、刘迎艳3）。8月数据截至 2026-08-06，仍在持续回收中。
+    </div>
+    <div class="brandline">同程旅行 LY.COM · 1v1服务管家服务质量专项 · 数据看板生成于 2026-08-06</div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script>if(!window.echarts){document.write('<script src="https://unpkg.com/echarts@5.5.0/dist/echarts.min.js"><\/script>')}</script>
+<script>if(!window.echarts){document.write('<script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"><\/script>')}</script>
+<script>
+/* ================= 数据 ================= */
+var DATA = {
+  persons:['戴孟芳','程虹','王晨','刘迎艳','许梦圆','朱锦城'],
+  pcolors:{'戴孟芳':'#00A568','程虹':'#715EFF','王晨':'#2DA1E7','刘迎艳':'#01C1B2','许梦圆':'#E8A33D','朱锦城':'#FF7A5C'},
+  months:['1月','2月','3月','4月','5月','6月','7月','8月'],
+  p1:{
+    days:['8/1','8/2','8/3','8/4','8/5','8/6'],
+    daily:[7,6,12,8,6,3],
+    prov:[['北京',6],['湖南',4],['山东',3],['内蒙古',3],['四川',3],['新疆',3],['江苏',3],['福建',3],['广东',2],['云南',2]],
+    themes:[['好评-服务热情贴心',6],['好评-响应及时高效',1],['建议-退改与费用',1],['其他',2],['无有效意见',13],['未填写',19]],
+    person:{
+      '戴孟芳':{total:4,nps:100.0,band:[4,0,0],avg:[9.00,9.00,9.00,9.00],
+        quotes:[{t:'pos',n:'王勇',d:'08-04',s:9,x:'对管家没得什么意见，但是对同程退机票手续费太贵了有意见。'},
+                {t:'pos',n:'[太阳]',d:'08-02',s:9,x:'同程小李非常贴心，感谢'}],
+        note:'4份全9分；1份满分服务+明确产品诉求（退票手续费）'},
+      '程虹':{total:5,nps:100.0,band:[5,0,0],avg:[9.00,9.00,9.00,9.00],
+        quotes:[{t:'pos',n:'Khorchin.',d:'08-01',s:9,x:'專業'}],
+        note:'5份全9分，获「專業」点赞'},
+      '王晨':{total:10,nps:100.0,band:[10,0,0],avg:[8.80,8.50,8.60,8.80],
+        quotes:[],
+        note:'回收量第2、全9分/8分，文字反馈率仅20%'},
+      '刘迎艳':{total:5,nps:100.0,band:[5,0,0],avg:[9.00,9.00,9.00,9.00],
+        quotes:[{t:'pos',n:'刘玲',d:'08-03',s:9,x:'回复快，效率高。'},
+                {t:'pos',n:'十月馨',d:'08-03',s:9,x:'服务很周到'}],
+        note:'5份全9分，「快」与「周到」是标签'},
+      '许梦圆':{total:5,nps:100.0,band:[5,0,0],avg:[9.00,9.00,9.00,9.00],
+        quotes:[{t:'pos',n:'肖尚文',d:'08-01',s:9,x:'服务态度热情及时，继续努力。'}],
+        note:'5份全9分，服务温度感强'},
+      '朱锦城':{total:13,nps:92.3,band:[12,1,0],avg:[8.77,8.23,8.46,8.77],
+        quotes:[{t:'pos',n:'李忠诚',d:'08-05',s:9,x:'管家服务专业效率高，非常满意！这么晚还在帮我值机选座，非常感谢！'},
+                {t:'pos',n:'有诚必扰',d:'08-03',s:9,x:'非常热心'},
+                {t:'neg',n:'Tang_Xu',d:'08-05',s:6,x:'（6分未留言 · 建议优先回访定位原因）'}],
+        note:'回收量第1（占小组31%）；含小组唯一6分件'}
+    }
+  },
+  p2:{
+    group:{vol:[158,103,152,158,142,148,198,42],nps:[100.0,99.0,98.0,98.7,99.3,99.3,97.5,97.6],
+      vsat:[158,102,150,156,141,147,194,41],mid:[0,1,1,2,1,1,3,1],vd:[0,0,1,0,0,0,1,0],
+      avgq4:[8.96,8.92,8.86,8.85,8.92,8.92,8.88,8.88],
+      themes:{'好评类':[21,12,29,18,18,16,21,8],'中性(无意见)':[71,45,62,66,64,66,74,15],'建议/不满类':[1,0,0,0,2,1,0,1],'未填写':[66,46,61,74,58,65,103,19]}},
+    person:{
+      '戴孟芳':{nps:[100,100,100,100,100,100,100,100],vol:[25,17,31,32,27,30,33,4],avg:[9.00,8.88,9.00,8.88,8.89,9.00,9.00,9.00],cumNps:100.0,cumVol:199},
+      '程虹':{nps:[100,100,92.3,91.7,100,100,96.3,100],vol:[26,18,13,24,18,20,27,5],avg:[8.92,9.00,8.38,8.50,8.94,8.75,8.78,9.00],cumNps:97.4,cumVol:151},
+      '王晨':{nps:[100,100,94.7,100,100,100,97.3,100],vol:[39,15,38,16,23,31,37,10],avg:[9.00,9.00,8.74,8.88,9.00,9.00,8.92,8.80],cumNps:98.6,cumVol:209},
+      '刘迎艳':{nps:[100,100,100,100,100,100,91.7,100],vol:[8,14,25,18,24,19,24,5],avg:[9.00,8.93,8.92,9.00,8.96,8.89,8.62,9.00],cumNps:98.5,cumVol:137},
+      '许梦圆':{nps:[100,100,100,100,100,100,100,100],vol:[21,15,19,38,22,13,41,5],avg:[8.95,9.00,9.00,8.89,8.91,8.92,8.98,9.00],cumNps:100.0,cumVol:174},
+      '朱锦城':{nps:[100,95.8,100,100,96.4,97.1,97.2,92.3],vol:[39,24,26,30,28,35,36,13],avg:[8.90,8.79,8.96,8.93,8.86,8.89,8.86,8.77],cumNps:97.8,cumVol:231}
+    },
+    causes:[['平台产品/机制问题',4],['未留言低分',6],['疑似录入异常',1],['信息通知问题',1]]
+  }
+};
+
+/* ================= 公共样式 ================= */
+var GREEN='#00C07B',PURPLE='#715EFF',ORANGE='#FF5D3D',GOLD='#E8A33D',BLUE='#2DA1E7',INK='#111827';
+var BAND_C=['#00C07B','#FFC53D','#FF5D3D'];
+var axisCommon={axisLine:{lineStyle:{color:'#D8E2DC'}},axisTick:{show:false},axisLabel:{color:'#7A8494',fontSize:11},splitLine:{lineStyle:{color:'#EFF4F1'}}};
+function tt(){return {trigger:'axis',backgroundColor:'#fff',borderColor:'#E7EDEA',textStyle:{color:'#111827',fontSize:12},extraCssText:'box-shadow:0 6px 20px rgba(17,24,39,.12);border-radius:10px'}}
+var charts=[], monthInit=false;
+function mk(id,opt){var el=document.getElementById(id);if(!el||!window.echarts)return null;var c=echarts.init(el);c.setOption(opt);charts.push(c);return c}
+function grad(){return new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#00C878'},{offset:1,color:'#01C192'}])}
+
+/* ================= 周报图表 ================= */
+function initWeek(){
+  var P=DATA.persons, p1=DATA.p1;
+  var vols=P.map(function(b){return p1.person[b].total});
+  var npss=P.map(function(b){return p1.person[b].nps});
+  mk('c_p1_npvol',{
+    tooltip:tt(),legend:{show:false},
+    grid:{left:44,right:52,top:36,bottom:30},
+    xAxis:Object.assign({type:'category',data:P},axisCommon),
+    yAxis:[Object.assign({type:'value',name:'回收量',nameTextStyle:{color:'#8B94A3',fontSize:10}},axisCommon),
+           Object.assign({type:'value',name:'NPS%',min:80,max:101,nameTextStyle:{color:'#8B94A3',fontSize:10}},axisCommon)],
+    series:[
+      {type:'bar',data:vols,barWidth:30,itemStyle:{color:grad(),borderRadius:[8,8,0,0]},label:{show:true,position:'top',color:'#00875A',fontWeight:700}},
+      {type:'line',yAxisIndex:1,data:npss,symbol:'circle',symbolSize:9,lineStyle:{color:PURPLE,width:3},itemStyle:{color:PURPLE,borderColor:'#fff',borderWidth:2},
+       label:{show:true,position:'top',formatter:'{c}%',color:PURPLE,fontWeight:700,fontSize:11},
+       markLine:{silent:true,symbol:'none',lineStyle:{color:'#FF9A7E',type:'dashed',width:1.5},label:{formatter:'小组 97.6%',color:'#E14B2C',fontSize:10},data:[{yAxis:97.6}]}}
+    ]
+  });
+  mk('c_p1_band',{
+    tooltip:Object.assign(tt(),{trigger:'item',formatter:function(p){return p.name+'<br/>'+p.seriesName+'：'+p.value+' 份'}}),
+    legend:{data:['非常满意(7-9)','一般(3-6)','非常不满意(0-2)'],bottom:0,textStyle:{fontSize:11,color:'#5C6675'}},
+    grid:{left:64,right:30,top:14,bottom:40},
+    xAxis:Object.assign({type:'value',max:13},axisCommon),
+    yAxis:Object.assign({type:'category',data:P.slice().reverse()},axisCommon),
+    series:[
+      {name:'非常满意(7-9)',type:'bar',stack:'t',data:P.map(function(b){return p1.person[b].band[0]}).reverse(),itemStyle:{color:BAND_C[0],borderRadius:[0,0,0,0]},barWidth:16,label:{show:true,color:'#fff',fontSize:10,formatter:function(p){return p.value>0?p.value:''}}},
+      {name:'一般(3-6)',type:'bar',stack:'t',data:P.map(function(b){return p1.person[b].band[1]}).reverse(),itemStyle:{color:BAND_C[1]},barWidth:16,label:{show:true,color:'#7A5200',fontSize:10,formatter:function(p){return p.value>0?p.value:''}}},
+      {name:'非常不满意(0-2)',type:'bar',stack:'t',data:P.map(function(b){return p1.person[b].band[2]}).reverse(),itemStyle:{color:BAND_C[2],borderRadius:[0,6,6,0]},barWidth:16,label:{show:true,color:'#fff',fontSize:10,formatter:function(p){return p.value>0?p.value:''}}}
+    ]
+  });
+  var radarSeries=P.map(function(b){
+    return {name:b,value:p1.person[b].avg,lineStyle:{width:2},areaStyle:{opacity:.08},symbolSize:4};
+  });
+  mk('c_p1_radar',{
+    tooltip:{trigger:'item',backgroundColor:'#fff',borderColor:'#E7EDEA',textStyle:{color:'#111827'}},
+    legend:{data:P,bottom:0,textStyle:{fontSize:11,color:'#5C6675'}},
+    color:P.map(function(b){return DATA.pcolors[b]}),
+    radar:{indicator:[{name:'Q1 管家满意度',max:9,min:8},{name:'Q2 产品满意度',max:9,min:8},{name:'Q3 推荐同程旅行',max:9,min:8},{name:'Q4 推荐1v1管家',max:9,min:8}],
+      radius:'62%',center:['50%','46%'],axisName:{color:'#5C6675',fontSize:11},splitArea:{areaStyle:{color:['#FBFDFC','#F4FAF7']}},splitLine:{lineStyle:{color:'#E3EDE7'}}},
+    series:[{type:'radar',data:radarSeries}]
+  });
+  mk('c_p1_daily',{
+    tooltip:tt(),grid:{left:34,right:14,top:24,bottom:26},
+    xAxis:Object.assign({type:'category',data:p1.days,boundaryGap:false},axisCommon),
+    yAxis:Object.assign({type:'value'},axisCommon),
+    series:[{type:'line',data:p1.daily,smooth:true,symbol:'circle',symbolSize:8,lineStyle:{color:GREEN,width:3},itemStyle:{color:GREEN,borderColor:'#fff',borderWidth:2},
+      label:{show:true,position:'top',color:'#00875A',fontWeight:700},
+      areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(0,192,123,.30)'},{offset:1,color:'rgba(0,192,123,.02)'}])}}]
+  });
+  mk('c_p1_theme',{
+    tooltip:Object.assign(tt(),{trigger:'item'}),
+    grid:{left:118,right:36,top:8,bottom:8},
+    xAxis:Object.assign({type:'value'},axisCommon),
+    yAxis:Object.assign({type:'category',data:DATA.p1.themes.map(function(x){return x[0]}),axisLabel:{color:'#5C6675',fontSize:10.5}},axisCommon),
+    series:[{type:'bar',data:DATA.p1.themes.map(function(x){
+        var c= x[0].indexOf('好评')===0?GREEN : x[0].indexOf('建议')===0?GOLD : x[0]==='未填写'?'#D9E2DD':'#B9C4BE';
+        return {value:x[1],itemStyle:{color:c,borderRadius:[0,6,6,0]}}}),barWidth:12,label:{show:true,position:'right',color:'#5C6675',fontSize:11}}]
+  });
+  mk('c_p1_prov',{
+    tooltip:tt(),grid:{left:50,right:30,top:16,bottom:30},
+    xAxis:Object.assign({type:'category',data:p1.prov.map(function(x){return x[0]})},axisCommon),
+    yAxis:Object.assign({type:'value'},axisCommon),
+    series:[{type:'bar',data:p1.prov.map(function(x,i){return {value:x[1],itemStyle:{color:i<3?grad():'#9FD9C0',borderRadius:[7,7,0,0]}}}),barWidth:26,
+      label:{show:true,position:'top',color:'#00875A',fontWeight:700}}]
+  });
+  renderPCards();
+}
+function renderPCards(){
+  var box=document.getElementById('pcards'),html='';
+  DATA.persons.forEach(function(b){
+    var d=DATA.p1.person[b], c=DATA.pcolors[b];
+    var vb=d.band[0],mb=d.band[1],xb=d.band[2],tot=vb+mb+xb;
+    var qhtml=d.quotes.map(function(q){
+      return '<div class="quote '+q.t+'">「'+q.x+'」<div class="qmeta">'+q.n+' · '+q.d+' · '+q.s+'分</div></div>';
+    }).join('');
+    if(!d.quotes.length) qhtml='<div class="quote" style="background:#F6F8F7;border:1px solid #ECF1EE;color:#8B94A3">本期客户未留下文字评价</div>';
+    var npsBg = d.nps>=99.5?'#DCF6E9;color:#00875A' : d.nps>=97?'#FFF4D6;color:#A06B00':'#FFE7DF;color:#D6401F';
+    html+='<div class="pcard">'
+      +'<div class="ph"><div class="avatar" style="background:linear-gradient(135deg,'+c+','+c+'CC)">'+b.charAt(0)+'</div>'
+      +'<div><div class="nm">'+b+'</div><div class="role">1v1 服务管家</div></div>'
+      +'<div class="nps-badge num" style="background:'+npsBg+'">NPS '+d.nps+'%</div></div>'
+      +'<div class="mini-bar"><i style="width:'+(vb/tot*100)+'%;background:'+BAND_C[0]+'"></i><i style="width:'+(mb/tot*100)+'%;background:'+BAND_C[1]+'"></i><i style="width:'+(xb/tot*100)+'%;background:'+BAND_C[2]+'"></i></div>'
+      +'<div class="legend-row"><span>非常满意 '+vb+'</span><span>一般 '+mb+'</span><span>非常不满意 '+xb+'</span></div>'
+      +'<div class="stats-row">'
+      +'<div class="stat"><b class="num">'+d.total+'</b><span>回收量</span></div>'
+      +'<div class="stat"><b class="num">'+d.avg[0]+'</b><span>Q1 管家满意</span></div>'
+      +'<div class="stat"><b class="num">'+d.avg[1]+'</b><span>Q2 产品满意</span></div>'
+      +'<div class="stat"><b class="num">'+d.avg[2]+'</b><span>Q3 荐同程</span></div>'
+      +'<div class="stat"><b class="num">'+d.avg[3]+'</b><span>Q4 荐管家</span></div></div>'
+      +qhtml+'<div class="note">▸ '+d.note+'</div></div>';
+  });
+  box.innerHTML=html;
+}
+
+/* ================= 月度图表 ================= */
+function initMonth(){
+  if(monthInit) return; monthInit=true;
+  var M=DATA.months, g=DATA.p2.group, P=DATA.persons;
+  mk('c_m_group',{
+    tooltip:tt(),legend:{data:['回收量','小组NPS'],top:0,textStyle:{fontSize:11,color:'#5C6675'}},
+    grid:{left:44,right:52,top:40,bottom:30},
+    xAxis:Object.assign({type:'category',data:M},axisCommon),
+    yAxis:[Object.assign({type:'value',name:'回收量',nameTextStyle:{color:'#8B94A3',fontSize:10}},axisCommon),
+           Object.assign({type:'value',name:'NPS%',min:96,max:100.5,nameTextStyle:{color:'#8B94A3',fontSize:10}},axisCommon)],
+    series:[
+      {name:'回收量',type:'bar',data:g.vol,barWidth:26,itemStyle:{color:grad(),borderRadius:[7,7,0,0]},label:{show:true,position:'top',color:'#00875A',fontSize:10.5}},
+      {name:'小组NPS',type:'line',yAxisIndex:1,data:g.nps,symbol:'circle',symbolSize:9,lineStyle:{color:PURPLE,width:3},itemStyle:{color:PURPLE,borderColor:'#fff',borderWidth:2},
+       label:{show:true,position:'top',formatter:'{c}%',color:PURPLE,fontSize:10.5,fontWeight:700}}
+    ]
+  });
+  mk('c_m_struct',{
+    tooltip:Object.assign(tt(),{formatter:function(ps){var s=ps[0].axisValue+'<br/>';ps.forEach(function(p){s+=p.marker+p.seriesName+'：'+p.value+' 份<br/>'});return s}}),
+    legend:{data:['非常满意','一般','非常不满意'],top:0,textStyle:{fontSize:11,color:'#5C6675'}},
+    grid:{left:44,right:20,top:40,bottom:30},
+    xAxis:Object.assign({type:'category',data:M},axisCommon),
+    yAxis:Object.assign({type:'value',max:100,axisLabel:{formatter:'{value}%'}},axisCommon),
+    series:[
+      {name:'非常满意',type:'bar',stack:'s',data:g.vsat.map(function(v,i){return +(v/g.vol[i]*100).toFixed(1)}),itemStyle:{color:BAND_C[0]},barWidth:30},
+      {name:'一般',type:'bar',stack:'s',data:g.mid.map(function(v,i){return +(v/g.vol[i]*100).toFixed(1)}),itemStyle:{color:BAND_C[1]}},
+      {name:'非常不满意',type:'bar',stack:'s',data:g.vd.map(function(v,i){return +(v/g.vol[i]*100).toFixed(1)}),itemStyle:{color:BAND_C[2],borderRadius:[6,6,0,0]},
+       label:{show:true,position:'top',formatter:function(p){return g.vol[p.dataIndex]},color:'#5C6675',fontSize:10.5,fontWeight:700}}
+    ]
+  });
+  var dips={'程虹':[[3,'91.7%']],'王晨':[[2,'94.7%']],'刘迎艳':[[6,'91.7%']],'朱锦城':[[1,'95.8%'],[7,'92.3%']]};
+  var lines=P.map(function(b){
+    var d=DATA.p2.person[b];
+    return {name:b,type:'line',data:d.nps,symbol:'circle',symbolSize:6,lineStyle:{width:2,color:DATA.pcolors[b]},itemStyle:{color:DATA.pcolors[b]},
+      emphasis:{focus:'series'},
+      markPoint:(dips[b]?{data:dips[b].map(function(x){return {coord:[x[0],d.nps[x[0]]],value:x[1],symbolSize:1}}),label:{show:true,position:'bottom',color:'#D6401F',fontSize:9.5,formatter:function(p){return p.value}},itemStyle:{color:'#FF5D3D'}}:undefined)};
+  });
+  lines.push({name:'小组NPS',type:'line',data:g.nps,symbol:'diamond',symbolSize:9,lineStyle:{width:4,color:'#00A568',shadowColor:'rgba(0,192,123,.35)',shadowBlur:10},itemStyle:{color:'#00A568',borderColor:'#fff',borderWidth:2},zlevel:2});
+  mk('c_m_nps',{
+    tooltip:tt(),legend:{data:P.concat(['小组NPS']),top:0,textStyle:{fontSize:11,color:'#5C6675'}},
+    color:P.map(function(b){return DATA.pcolors[b]}),
+    grid:{left:44,right:24,top:44,bottom:30},
+    xAxis:Object.assign({type:'category',data:M,boundaryGap:false},axisCommon),
+    yAxis:Object.assign({type:'value',min:88,max:101,axisLabel:{formatter:'{value}%'}},axisCommon),
+    series:lines
+  });
+  var heat=[];
+  P.forEach(function(b,y){DATA.p2.person[b].vol.forEach(function(v,x){heat.push([x,y,v])})});
+  mk('c_m_heat',{
+    tooltip:{formatter:function(p){return P[p.value[1]]+' · '+M[p.value[0]]+'<br/>回收量：'+p.value[2]+' 份'},backgroundColor:'#fff',borderColor:'#E7EDEA',textStyle:{color:'#111827'}},
+    grid:{left:70,right:20,top:20,bottom:56},
+    xAxis:{type:'category',data:M,splitArea:{show:false},axisLine:{lineStyle:{color:'#D8E2DC'}},axisTick:{show:false},axisLabel:{color:'#7A8494'}},
+    yAxis:{type:'category',data:P,axisLine:{show:false},axisTick:{show:false},axisLabel:{color:'#3D4654',fontWeight:700}},
+    visualMap:{min:0,max:41,calculable:false,orient:'horizontal',left:'center',bottom:4,inRange:{color:['#E9F7F0','#8FE3BE','#2ECB8F','#00A568','#007A4D']},textStyle:{color:'#8B94A3'},itemWidth:12,itemHeight:110},
+    series:[{type:'heatmap',data:heat,label:{show:true,color:'#0B3D28',fontSize:10.5,fontWeight:700},itemStyle:{borderColor:'#fff',borderWidth:2,borderRadius:6},emphasis:{itemStyle:{shadowBlur:8,shadowColor:'rgba(0,165,104,.4)'}}}]
+  });
+  mk('c_m_avg',{
+    tooltip:tt(),legend:{data:P,top:0,textStyle:{fontSize:11,color:'#5C6675'}},
+    color:P.map(function(b){return DATA.pcolors[b]}),
+    grid:{left:44,right:20,top:40,bottom:30},
+    xAxis:Object.assign({type:'category',data:M,boundaryGap:false},axisCommon),
+    yAxis:Object.assign({type:'value',min:8.3,max:9.05},axisCommon),
+    series:P.map(function(b){return {name:b,type:'line',data:DATA.p2.person[b].avg,symbol:'circle',symbolSize:5,lineStyle:{width:2},emphasis:{focus:'series'}}})
+  });
+  var th=g.themes, thKeys=['好评类','中性(无意见)','建议/不满类','未填写'], thC=[GREEN,'#B9C4BE',ORANGE,'#DDE5E0'];
+  mk('c_m_theme',{
+    tooltip:Object.assign(tt(),{}),
+    legend:{data:thKeys,top:0,textStyle:{fontSize:11,color:'#5C6675'}},
+    grid:{left:40,right:20,top:40,bottom:30},
+    xAxis:Object.assign({type:'category',data:M},axisCommon),
+    yAxis:Object.assign({type:'value'},axisCommon),
+    series:thKeys.map(function(k,i){return {name:k,type:'bar',stack:'s',data:th[k],itemStyle:{color:thC[i],borderRadius:i===3?[6,6,0,0]:0},barWidth:28}})
+  });
+  mk('c_m_cause',{
+    tooltip:Object.assign(tt(),{trigger:'item'}),
+    grid:{left:120,right:44,top:14,bottom:14},
+    xAxis:Object.assign({type:'value'},axisCommon),
+    yAxis:Object.assign({type:'category',data:DATA.p2.causes.map(function(x){return x[0]}).reverse(),axisLabel:{color:'#3D4654',fontSize:11.5}},axisCommon),
+    series:[{type:'bar',data:DATA.p2.causes.map(function(x){return x[1]}).reverse(),barWidth:18,
+      itemStyle:{borderRadius:[0,8,8,0],color:function(p){return [GREEN,'#C7D2CC',GOLD,ORANGE][p.dataIndex]}},
+      label:{show:true,position:'right',formatter:'{c} 例',color:'#5C6675',fontWeight:700}}]
+  });
+  buildTables();
+}
+function lvCls(v){return v>=99.5?'lv-hi':v>=97?'lv-mid':'lv-low'}
+function buildTables(){
+  var M=DATA.months,P=DATA.persons;
+  var h1='<tr><th>管家</th>'+M.map(function(m){return '<th>'+m+'</th>'}).join('')+'<th>累计回收</th><th>累计NPS</th></tr>';
+  var h2=h1;
+  var r1='',r2='';
+  P.forEach(function(b){
+    var d=DATA.p2.person[b];
+    r1+='<tr><td class="name">'+b+'</td>'+d.nps.map(function(v){return '<td><span class="cell-nps '+lvCls(v)+'">'+v.toFixed(1)+'</span></td>'}).join('')+'<td class="num">'+d.cumVol+'</td><td><span class="cell-nps '+lvCls(d.cumNps)+'">'+d.cumNps.toFixed(1)+'</span></td></tr>';
+    r2+='<tr><td class="name">'+b+'</td>'+d.vol.map(function(v){return '<td class="num">'+v+'</td>'}).join('')+'<td class="num"><b>'+d.cumVol+'</b></td><td class="lv-na">—</td></tr>';
+  });
+  var g=DATA.p2.group;
+  r1+='<tr class="group-row"><td class="name">小组</td>'+g.nps.map(function(v){return '<td><span class="cell-nps '+lvCls(v)+'">'+v.toFixed(1)+'</span></td>'}).join('')+'<td class="num">1101</td><td><span class="cell-nps lv-hi">98.7</span></td></tr>';
+  r2+='<tr class="group-row"><td class="name">小组</td>'+g.vol.map(function(v){return '<td class="num">'+v+'</td>'}).join('')+'<td class="num"><b>1101</b></td><td class="lv-na">—</td></tr>';
+  document.getElementById('tbl-nps').innerHTML=h1+r1;
+  document.getElementById('tbl-vol').innerHTML=h2+r2;
+}
+
+/* ================= 交互 ================= */
+function switchTab(t){
+  var w=document.getElementById('view-week'),m=document.getElementById('view-month');
+  document.getElementById('btn-week').className='tab-btn'+(t==='week'?' active':'');
+  document.getElementById('btn-month').className='tab-btn'+(t==='month'?' active':'');
+  if(t==='week'){w.classList.remove('hidden');m.classList.add('hidden')}
+  else{m.classList.remove('hidden');w.classList.add('hidden');initMonth()}
+  setTimeout(function(){charts.forEach(function(c){c.resize()})},60);
+}
+window.addEventListener('resize',function(){charts.forEach(function(c){c.resize()})});
+window.addEventListener('load',function(){
+  if(window.echarts){initWeek()}
+  else{document.body.insertAdjacentHTML('afterbegin','<div style="background:#FFEDE8;color:#D6401F;padding:12px;text-align:center;font-size:13px">图表库加载失败，请检查网络后刷新页面</div>')}
+});
+</script>
+</body>
+</html>
